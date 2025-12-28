@@ -1,6 +1,7 @@
 package com.example.actividadfisicaysensores
 
 
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -24,6 +25,12 @@ class ActivitySensor : AppCompatActivity(), SensorEventListener {
     // Referencia específica al sensor de aceleración
     private var acelerometro: Sensor? = null
 
+    // Guarda los milisegundos de inicio
+    private var tiempoInicio: Long = 0
+
+    //Lista para los valores del acelerometro
+    private var listaIntensidades = mutableListOf<Double>()
+
     // Componentes de la interfaz
     private lateinit var tvEstado: TextView
     private lateinit var fondo: LinearLayout
@@ -31,6 +38,8 @@ class ActivitySensor : AppCompatActivity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sensor)
+
+        tiempoInicio = System.currentTimeMillis() //Se guarda el tiempo de inicio
 
         // Vinculación de vistas con el layout XML
         tvEstado = findViewById(R.id.tvEstadoMovimiento)
@@ -44,28 +53,57 @@ class ActivitySensor : AppCompatActivity(), SensorEventListener {
         acelerometro = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         // Botón para cerrar la actividad y volver a la pantalla principal
-        btnFinalizar.setOnClickListener { finish() }
+        btnFinalizar.setOnClickListener {
+            val tiempoFin = System.currentTimeMillis()
+            val segundosTotales = (tiempoFin - tiempoInicio) / 1000
+            val minutos = segundosTotales / 60
+            val segundos = segundosTotales % 60
+
+            val tiempoFormateado = String.format("%02d:%02d min", minutos, segundos)
+            // 2. CALCULAR INTENSIDAD MEDIA
+            // Si la lista está vacía, la media es 0. Si no, sumamos todo y dividimos.
+            val promedio = if (listaIntensidades.isNotEmpty()) listaIntensidades.average() else 0.0
+
+            // 3. Determinar etiqueta según el promedio
+            val etiquetaFinal = when {
+                promedio < 0.5 -> "Reposo"
+                promedio < 3.0 -> "Actividad Moderada"
+                else -> "Actividad Intensa"
+            }
+            // 4. Enviar datos de vuelta
+            val data = Intent()
+            data.putExtra("RESULTADO_INTENSIDAD", etiquetaFinal) // Enviamos la media, no el último valor
+            data.putExtra("TIEMPO_SESION", tiempoFormateado)
+
+            setResult(RESULT_OK, data)
+            finish()
+        }
     }
 
     /**
      * Se dispara automáticamente cada vez que el sensor detecta un cambio de movimiento.
      */
     override fun onSensorChanged(event: SensorEvent?) {
-        // Verificamos que el evento provenga del acelerómetro
+        // Verificamos que los datos provengan del acelerómetro
         if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
-            // Valores de aceleración en los ejes X, Y y Z
+            // Obtenemos la aceleración en los tres ejes (X, Y, Z)
             val x = event.values[0]
             val y = event.values[1]
             val z = event.values[2]
 
-            // Cálculo de la Magnitud Vectorial: Representa la fuerza total del movimiento
-            // independientemente de la dirección en la que se mueva el móvil.
+            // Aplicamos el teorema de Pitágoras en 3D para obtener la magnitud total del movimiento
             val magnitud = sqrt((x * x + y * y + z * z).toDouble())
 
-            // El acelerómetro marca 9.8 m/s² en reposo debido a la gravedad terrestre.
-            // Restamos la gravedad para obtener solo la fuerza aplicada por el usuario.
+            // Restamos la constante de gravedad terrestre (~9.8) para obtener el movimiento real
+            // causado por el usuario (movimiento neto)
             val movimientoNeto = magnitud - 9.8
 
+            // --- LÓGICA DE PROMEDIO ---
+            // Guardamos cada lectura en la lista mutable. Esto nos permitirá saber
+            // cómo fue la actividad durante TODA la sesión, no solo en el último segundo.
+            listaIntensidades.add(movimientoNeto)
+
+            // Actualizamos los colores y textos de la pantalla con el valor instantáneo
             actualizarUI(movimientoNeto)
         }
     }

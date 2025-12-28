@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,6 +23,42 @@ class ActivitySesion : AppCompatActivity() {
 
     // Adaptador encargado de gestionar la visualización de los datos en la lista
     private lateinit var adapter: Adapter
+
+    /**
+     * Launcher que gestiona el retorno de datos desde ActivitySensor.
+     * registerForActivityResult registra un canal de comunicación que espera un resultado
+     * de la actividad que vamos a lanzar.
+     */
+    private val sensorLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // Verificamos si la actividad secundaria (Sensor) terminó con éxito (RESULT_OK)
+        if (result.resultCode == RESULT_OK) {
+
+            // 1. EXTRAER DATOS: Obtenemos la información que empaquetamos en el Intent de vuelta.
+            // Usamos el operador ?: (elvis operator) para poner valores por defecto si algo falla.
+            val intensidad = result.data?.getStringExtra("RESULTADO_INTENSIDAD") ?: "Sin datos"
+            val duracionCorta = result.data?.getStringExtra("TIEMPO_SESION") ?: "00:00 min"
+
+            // 2. CREAR MODELO: Creamos un nuevo objeto de tipo RegistroSesion con la info recibida.
+            // Combinamos la intensidad en el nombre para que sea más descriptivo.
+            val sesionSensor = RegistroSesion(
+                name = "Sesión en tiempo real: $intensidad",
+                duration = duracionCorta,
+                date = Date(),                       // Fecha y hora
+                typeActivity = "Sensor"              // Etiqueta para diferenciarlo de lo manual
+            )
+
+            // 3. ACTUALIZAR UI: Insertamos el nuevo registro al principio de la lista.
+            listaSesiones.add(0, sesionSensor)
+
+            // Notificamos al adaptador que solo se ha insertado un elemento
+            adapter.notifyItemInserted(0)
+
+            // Hacemos scroll automático para que el usuario vea su sesión recién grabada
+            findViewById<RecyclerView>(R.id.rvRegistro).scrollToPosition(0)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +93,7 @@ class ActivitySesion : AppCompatActivity() {
                     name = nombre,
                     duration = "$tiempo min",
                     date = Date(),
-                    typeActivity = "Ejercicio" //Se establece por defecto para todas las actividades registradas (En un futuro se puede cambiar)
+                    typeActivity = "Manual" //Se establece por defecto para todas las actividades registradas (En un futuro se puede cambiar)
                 )
 
                 // Insertamos la nueva sesión en la posición 0 (parte superior de la lista)
@@ -81,7 +118,8 @@ class ActivitySesion : AppCompatActivity() {
         btnSensor.setOnClickListener {
             // Un Intent define la intención de pasar de la actividad actual a la de sensores
             val intent = Intent(this, ActivitySensor::class.java)
-            startActivity(intent)
+            // se cambia startActivity por sensorlauncher, para que recoja los datos de la otra activity
+            sensorLauncher.launch(intent)
         }
     }
 }
