@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Fondo -->
+    <color name="background_main">#FFF2E8CF</color>
+
+    <!-- Texto -->
+    <color name="text_dark">#FF386641</color>
+
+    <!-- Resaltes -->
+    <color name="highlight_primary">#FF6A994E</color>
+    <color name="highlight_secondary">#FFA7C957</color>
+    <color name="highlight_tertiary">#FFBC4749</color>
+
+    <!-- Neutros -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+</resources>

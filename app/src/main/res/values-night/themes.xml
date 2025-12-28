@@ -1,0 +1,24 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.ActividadFisicaYSensores"
+        parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+
+        <!-- Colores principales (más apagados) -->
+        <item name="colorPrimary">@color/text_dark</item>
+        <item name="colorPrimaryVariant">@color/highlight_tertiary</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Secundarios -->
+        <item name="colorSecondary">@color/highlight_secondary</item>
+        <item name="colorSecondaryVariant">@color/highlight_primary</item>
+        <item name="colorOnSecondary">@color/black</item>
+
+        <!-- Fondo oscuro personalizado -->
+        <item name="android:windowBackground">@color/black</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+
+    </style>
+
+</resources>
